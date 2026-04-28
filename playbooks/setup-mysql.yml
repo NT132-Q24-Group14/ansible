@@ -60,20 +60,11 @@
           retries: 5
           start_period: 30s
 
-    # - name: Wait for MySQL to be ready
-    #   community.docker.docker_container_exec:
-    #     container: "{{ mysql_container }}"
-    #     command: mysqladmin ping -h 127.0.0.1 -uroot -p"{{ mysql_root_password }}"
-    #   register: mysql_ping
-    #   retries: 10
-    #   delay: 3
-    #   until: mysql_ping.rc == 0
     - name: Wait for MySQL to be ready
       community.docker.docker_container_exec:
         container: "{{ mysql_container }}"
-        # Cố tình viết sai lệnh 'mysqladmin' thành 'mysqladmin-error' để nó văng lỗi
-        command: mysqladmin-error ping -h 127.0.0.1 -uroot -p"{{ mysql_root_password }}"
+        command: mysqladmin ping -h 127.0.0.1 -uroot -p"{{ mysql_root_password }}"
       register: mysql_ping
-      retries: 1        # Chỉnh lại cho lỗi ngay lập tức
-      delay: 0
+      retries: 10
+      delay: 3
       until: mysql_ping.rc == 0
