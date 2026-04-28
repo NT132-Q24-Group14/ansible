@@ -1,0 +1,79 @@
+- name: Setup MySQL
+  hosts: db-server
+  become: true
+
+  vars:
+    mysql_image: mysql:8.0
+    mysql_container: mysql
+    mysql_port: 3306
+    mysql_root_password: "{{ db_password}}"
+    mysql_database: app_db
+    mysql_user: app_user
+    mysql_password: "{{ db_password }}"
+    mysql_data_dir: /opt/mysql/data
+
+  tasks:
+
+    - name: Debug - In mật khẩu ra màn hình
+      debug:
+        msg: "Mat khau dang dung la: {{ mysql_root_password }}"
+
+    - name: Ensure MySQL data directory exists
+      file:
+        path: "{{ mysql_data_dir }}"
+        state: directory
+        owner: "999"
+        group: "999"
+        mode: "0755"
+
+    - name: Pull MySQL Docker image
+      community.docker.docker_image:
+        name: "{{ mysql_image }}"
+        source: pull
+
+    - name: Stop and remove old MySQL container
+      community.docker.docker_container:
+        name: "{{ mysql_container }}"
+        state: absent
+        force_kill: true
+
+    - name: Run MySQL container
+      community.docker.docker_container:
+        name: "{{ mysql_container }}"
+        image: "{{ mysql_image }}"
+        state: started
+        restart_policy: always
+        recreate: true
+        published_ports:
+          - "{{ mysql_port }}:3306"
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"
+          MYSQL_DATABASE: "{{ mysql_database }}"
+          MYSQL_USER: "{{ mysql_user }}"
+          MYSQL_PASSWORD: "{{ mysql_password }}"
+        volumes:
+          - "{{ mysql_data_dir }}:/var/lib/mysql"
+        healthcheck:
+          test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p{{ mysql_root_password }}"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+          start_period: 30s
+
+    # - name: Wait for MySQL to be ready
+    #   community.docker.docker_container_exec:
+    #     container: "{{ mysql_container }}"
+    #     command: mysqladmin ping -h 127.0.0.1 -uroot -p"{{ mysql_root_password }}"
+    #   register: mysql_ping
+    #   retries: 10
+    #   delay: 3
+    #   until: mysql_ping.rc == 0
+    - name: Wait for MySQL to be ready
+      community.docker.docker_container_exec:
+        container: "{{ mysql_container }}"
+        # Cố tình viết sai lệnh 'mysqladmin' thành 'mysqladmin-error' để nó văng lỗi
+        command: mysqladmin-error ping -h 127.0.0.1 -uroot -p"{{ mysql_root_password }}"
+      register: mysql_ping
+      retries: 1        # Chỉnh lại cho lỗi ngay lập tức
+      delay: 0
+      until: mysql_ping.rc == 0
