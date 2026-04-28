@@ -1,0 +1,43 @@
+- name: Setup Node Exporter
+  hosts: all
+  become: true
+
+  vars:
+    node_exporter_image: "prom/node-exporter:latest"
+    node_exporter_container: "node-exporter"
+    node_exporter_port: 9100
+
+  tasks:
+    - name: Pull node-exporter Docker image
+      community.docker.docker_image:
+        name: "{{ node_exporter_image }}"
+        source: pull
+
+    - name: Stop and remove old node-exporter container
+      community.docker.docker_container:
+        name: "{{ node_exporter_container }}"
+        state: absent
+        force_kill: true
+
+    - name: Run node-exporter container
+      community.docker.docker_container:
+        name: "{{ node_exporter_container }}"
+        image: "{{ node_exporter_image }}"
+        state: started
+        recreate: true
+        restart_policy: always
+        ports:
+          - "{{ node_exporter_port }}:{{ node_exporter_port }}"
+        volumes:
+          - /proc:/host/proc:ro
+          - /sys:/host/sys:ro
+          - /:/rootfs:ro
+        command: --path.procfs=/host/proc --path.sysfs=/host/sys --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+
+    - name: Verify node-exporter is accessible
+      uri:
+        url: "http://localhost:{{ node_exporter_port }}/metrics"
+        method: GET
+        status_code: 200
+      retries: 3
+      delay: 2

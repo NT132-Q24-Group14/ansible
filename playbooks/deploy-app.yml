@@ -1,0 +1,31 @@
+- name: Deploy Application
+  hosts: app
+  become: true
+
+  vars:
+    image_name: mothmon14682/pms:latest
+    container_name: pms
+    host_port: 80
+    container_port: 1234
+
+  tasks:
+    - name: Pull the latest image
+      community.docker.docker_image:
+        name: "{{ image_name }}"
+        source: pull
+
+    - name: Stop and remove old container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        state: absent
+        force_kill: true 
+
+    - name: Run new container
+      community.docker.docker_container:
+        name: "{{ container_name }}"
+        image: "{{ image_name }}"
+        state: started
+        recreate: true
+        restart_policy: always
+        ports:
+          - "{{ host_port }}:{{ container_port }}"
