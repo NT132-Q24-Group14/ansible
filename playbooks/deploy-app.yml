@@ -6,7 +6,7 @@
     image_name: mothmon14682/pms:latest
     container_name: pms
     host_port: 80
-    container_port: 1234
+    container_port: 8080
 
   tasks:
     - name: Pull the latest image
