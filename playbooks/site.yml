@@ -1,3 +1,2 @@
 - import_playbook: deploy-app.yml
 - import_playbook: setup-node-exporter.yml
-- import_playbook: setup-mysql.yml

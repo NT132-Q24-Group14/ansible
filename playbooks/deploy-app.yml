@@ -14,12 +14,6 @@
         name: "{{ image_name }}"
         source: pull
 
-    - name: Stop and remove old container
-      community.docker.docker_container:
-        name: "{{ container_name }}"
-        state: absent
-        force_kill: true 
-
     - name: Run new container
       community.docker.docker_container:
         name: "{{ container_name }}"
