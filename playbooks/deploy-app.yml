@@ -20,6 +20,8 @@
         image: "{{ image_name }}"
         state: started
         recreate: true
+        pull: true
         restart_policy: always
         ports:
           - "{{ host_port }}:{{ container_port }}"
+      when: lookup('env','BRANCH_NAME') == 'main'
