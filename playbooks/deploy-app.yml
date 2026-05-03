@@ -24,4 +24,9 @@
         restart_policy: always
         ports:
           - "{{ host_port }}:{{ container_port }}"
+        env:
+          pms_db_host: "{{ pms_db_host }}"
+          pms_db_name: "{{ pms_db_name }}"
+          pms_db_username: "{{ pms_db_username }}"
+          pms_db_password: "{{ pms_db_password }}"
       when: lookup('env','BRANCH_NAME') == 'main'
