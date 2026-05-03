@@ -3,7 +3,7 @@
   become: true
 
   vars:
-    image_name: mothmon14682/pms:latest
+    image_name: mothmon14682/pms:stable
     container_name: pms
     host_port: 80
     container_port: 8080
