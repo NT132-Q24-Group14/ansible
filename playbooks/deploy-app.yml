@@ -5,7 +5,7 @@
   vars:
     image_name: mothmon14682/pms:stable
     container_name: pms
-    host_port: 80
+    host_port: 9999
     container_port: 8080
 
   tasks:
