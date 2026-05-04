@@ -2,6 +2,10 @@
   hosts: app
   become: true
 
+  vars_files:
+    - ../inventory/group_vars/all/vault.yml
+    - ../inventory/group_vars/all/vars.yml
+
   vars:
     image_name: mothmon14682/pms:stable
     container_name: pms
