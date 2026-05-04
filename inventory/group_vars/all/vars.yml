@@ -1,2 +1,2 @@
-db_user: "{{ vault_db_user }}"
+db_username: "{{ vault_db_username }}"
 db_password: "{{ vault_db_password }}"
