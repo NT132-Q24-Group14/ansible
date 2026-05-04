@@ -14,6 +14,10 @@
         name: "{{ image_name }}"
         source: pull
 
+    - name: Create network
+      community.docker.docker_network:
+        name: pms
+
     - name: Run new container
       community.docker.docker_container:
         name: "{{ container_name }}"
@@ -22,8 +26,8 @@
         recreate: true
         pull: true
         restart_policy: always
-        ports:
-          - "{{ host_port }}:{{ container_port }}"
+        networks:
+          - name: pms
         env:
           pms_db_host: "{{ pms_db_host }}"
           pms_db_name: "{{ pms_db_name }}"
