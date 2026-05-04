@@ -29,8 +29,8 @@
         networks:
           - name: pms
         env:
-          pms_db_host: "{{ pms_db_host }}"
-          pms_db_name: "{{ pms_db_name }}"
+          pms_db_host: "{{ db_host }}"
+          pms_db_name: "{{ db_name }}"
           pms_db_username: "{{ db_username }}"
           pms_db_password: "{{ db_password }}"
       when: lookup('env','BRANCH_NAME') == 'main'
