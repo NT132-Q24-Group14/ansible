@@ -1,4 +1,2 @@
-pat: "{{ vault_pat }}"
-
 db_user: "{{ vault_db_user }}"
 db_password: "{{ vault_db_password }}"
