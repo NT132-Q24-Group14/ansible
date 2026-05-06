@@ -43,12 +43,19 @@
       until: container_info.container.State.Running == true
       retries: 10
       delay: 3
-
-    - name: Đổi upstream sang container rollback
+- name: Đổi upstream sang container rollback
       ansible.builtin.replace:
         path: "{{ nginx_config_host }}"
         regexp: 'server \S+:{{ container_port }};'
         replace: 'server {{ container_name_new }}:{{ container_port }};'
+
+    - name: Copy nginx.conf từ host vào container
+      ansible.builtin.command: >
+        docker cp {{ nginx_config_host }} {{ nginx_container_name }}:/etc/nginx/nginx.conf.new
+
+    - name: Thay thế nginx.conf trong container
+      ansible.builtin.command: >
+        docker exec {{ nginx_container_name }} mv /etc/nginx/nginx.conf.new /etc/nginx/nginx.conf
 
     - name: Reload Nginx
       ansible.builtin.command: >
