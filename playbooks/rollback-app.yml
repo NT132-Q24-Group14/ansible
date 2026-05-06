@@ -43,7 +43,8 @@
       until: container_info.container.State.Running == true
       retries: 10
       delay: 3
-- name: Đổi upstream sang container rollback
+      
+    - name: Đổi upstream sang container rollback
       ansible.builtin.replace:
         path: "{{ nginx_config_host }}"
         regexp: 'server \S+:{{ container_port }};'
