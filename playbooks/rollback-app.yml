@@ -9,6 +9,7 @@
     container_port: 8080
     nginx_container_name: proxy
     nginx_config_host: /home/app-server/nginx.conf
+    nginx_config_remote: /etc/nginx/nginx.conf
 
   tasks:
     - name: Validate image_tag is provided
