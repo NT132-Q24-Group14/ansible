@@ -37,12 +37,6 @@
           pms_db_username: "{{ db_username }}"
           pms_db_password: "{{ db_password }}"
 
-    - name: Chờ container rollback sẵn sàng
-      ansible.builtin.wait_for:
-        host: "{{ container_name_new }}"
-        port: "{{ container_port }}"
-        timeout: 30
-
     - name: Copy nginx.conf từ container ra host
       ansible.builtin.command: >
         docker cp {{ nginx_container_name }}:{{ nginx_config_remote }} {{ nginx_config_local }}
