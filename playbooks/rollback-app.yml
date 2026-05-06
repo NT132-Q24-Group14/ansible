@@ -48,7 +48,7 @@
     - name: Đổi upstream sang container rollback
       ansible.builtin.replace:
         path: "{{ nginx_config_host }}"
-        regexp: 'server \S+:{{ container_port }};'
+        regexp: 'server\s+[^;]+:{{ container_port }};'
         replace: 'server {{ container_name_new }}:{{ container_port }};'
 
     - name: Test Nginx config
