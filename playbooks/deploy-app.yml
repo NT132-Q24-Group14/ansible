@@ -3,10 +3,8 @@
   become: true
 
   vars:
-    image_name: mothmon14682/pms:latest
+    image_name: mothmon14682/pms:stable
     container_name: pms
-    host_port: 80
-    container_port: 8080
 
   tasks:
     - name: Pull the latest image
@@ -14,12 +12,23 @@
         name: "{{ image_name }}"
         source: pull
 
+    - name: Create network
+      community.docker.docker_network:
+        name: pms
+
     - name: Run new container
       community.docker.docker_container:
         name: "{{ container_name }}"
         image: "{{ image_name }}"
         state: started
         recreate: true
+        pull: true
         restart_policy: always
-        ports:
-          - "{{ host_port }}:{{ container_port }}"
+        networks:
+          - name: pms
+        env:
+          pms_db_host: "{{ db_host }}"
+          pms_db_name: "{{ db_name }}"
+          pms_db_username: "{{ db_username }}"
+          pms_db_password: "{{ db_password }}"
+      when: lookup('env','BRANCH_NAME') == 'main'
