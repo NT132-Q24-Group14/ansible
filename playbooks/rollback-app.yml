@@ -6,9 +6,10 @@
     image_repo: mothmon14682/pms
     container_name_old: pms
     container_name_new: pms_rollback
-    host_port_new: 8081
     container_port: 8080
-    nginx_config_path: /etc/nginx/nginx.conf
+    nginx_container_name: proxy
+    nginx_config_local: /tmp/nginx.conf
+    nginx_config_remote: /etc/nginx/nginx.conf
 
   tasks:
     - name: Validate image_tag is provided
@@ -22,31 +23,43 @@
         source: pull
         force_source: true
 
-    - name: Chạy container rollback trên port 8081
+    - name: Chạy container rollback
       community.docker.docker_container:
         name: "{{ container_name_new }}"
         image: "{{ image_repo }}:{{ image_tag }}"
         state: started
         restart_policy: always
-        ports:
-          - "{{ host_port_new }}:{{ container_port }}"
+        networks:
+          - name: pms
+        env:
+          pms_db_host: "{{ db_host }}"
+          pms_db_name: "{{ db_name }}"
+          pms_db_username: "{{ db_username }}"
+          pms_db_password: "{{ db_password }}"
 
     - name: Chờ container rollback sẵn sàng
       ansible.builtin.wait_for:
-        host: localhost
-        port: "{{ host_port_new }}"
+        host: "{{ container_name_new }}"
+        port: "{{ container_port }}"
         timeout: 30
 
-    - name: Đổi Nginx trỏ sang port 8081
-      ansible.builtin.replace:
-        path: "{{ nginx_config_path }}"
-        regexp: 'server localhost:\d+;'
-        replace: 'server localhost:8081;'
+    - name: Copy nginx.conf từ container ra host
+      ansible.builtin.command: >
+        docker cp {{ nginx_container_name }}:{{ nginx_config_remote }} {{ nginx_config_local }}
 
-    - name: Reload Nginx
-      ansible.builtin.service:
-        name: nginx
-        state: reloaded
+    - name: Đổi upstream sang container rollback
+      ansible.builtin.replace:
+        path: "{{ nginx_config_local }}"
+        regexp: 'server \S+:{{ container_port }};'
+        replace: 'server {{ container_name_new }}:{{ container_port }};'
+
+    - name: Copy nginx.conf đã sửa vào container
+      ansible.builtin.command: >
+        docker cp {{ nginx_config_local }} {{ nginx_container_name }}:{{ nginx_config_remote }}
+
+    - name: Reload Nginx trong container
+      ansible.builtin.command: >
+        docker exec {{ nginx_container_name }} nginx -s reload
 
     - name: Stop container cũ
       community.docker.docker_container:
