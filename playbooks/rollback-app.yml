@@ -10,6 +10,7 @@
     nginx_container_name: proxy
     nginx_config_host: /home/app-server/nginx.conf
     nginx_config_remote: /etc/nginx/nginx.conf
+    rollback_script: /home/app-server/rollback-nginx.sh
 
   tasks:
     - name: Validate image_tag is provided
@@ -44,23 +45,31 @@
       until: container_info.container.State.Running == true
       retries: 10
       delay: 3
-    - name: Đổi upstream sang container rollback
-      ansible.builtin.replace:
-        path: "{{ nginx_config_host }}"
-        regexp: 'pms:{{ container_port }}'
-        replace: '{{ container_name_new }}:{{ container_port }}'
 
-    - name: Copy nginx.conf vào container proxy
-      ansible.builtin.command: >
-        docker cp {{ nginx_config_host }} {{ nginx_container_name }}:/etc/nginx/nginx.conf
+    - name: Create rollback nginx script
+      ansible.builtin.copy:
+        dest: "{{ rollback_script }}"
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          set -e
 
-    - name: Test Nginx config
-      ansible.builtin.command: >
-        docker exec {{ nginx_container_name }} nginx -t
+          echo "Updating nginx upstream..."
+          sed -i 's/pms:{{ container_port }}/{{ container_name_new }}:{{ container_port }}/g' {{ nginx_config_host }}
 
-    - name: Reload Nginx
-      ansible.builtin.command: >
-        docker exec {{ nginx_container_name }} nginx -s reload
+          echo "Copying nginx config..."
+          docker cp {{ nginx_config_host }} {{ nginx_container_name }}:/etc/nginx/nginx.conf
+
+          echo "Reloading nginx..."
+          docker exec {{ nginx_container_name }} nginx -t
+          docker exec {{ nginx_container_name }} nginx -s reload
+
+          echo "Nginx switched to {{ container_name_new }}."
+
+    - name: Run rollback nginx script
+      ansible.builtin.command: "{{ rollback_script }}"
+
+
 
     - name: Stop container cũ
       community.docker.docker_container:
