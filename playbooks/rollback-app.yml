@@ -8,8 +8,7 @@
     container_name_new: pms_rollback
     container_port: 8080
     nginx_container_name: proxy
-    nginx_config_local: ~/nginx.conf
-    nginx_config_remote: /etc/nginx/nginx.conf
+    nginx_config_host: /home/app-server/nginx.conf
 
   tasks:
     - name: Validate image_tag is provided
@@ -32,26 +31,26 @@
         networks:
           - name: pms
         env:
-          pms_db_host: "{{ db_host }}"
-          pms_db_name: "{{ db_name }}"
-          pms_db_username: "{{ db_username }}"
-          pms_db_password: "{{ db_password }}"
+          db_host: "{{ db_host }}"
+          db_name: "{{ db_name }}"
+          db_username: "{{ db_username }}"
+          db_password: "{{ db_password }}"
 
-    - name: Copy nginx.conf từ container ra host
-      ansible.builtin.command: >
-        docker cp {{ nginx_container_name }}:{{ nginx_config_remote }} {{ nginx_config_local }}
+    - name: Chờ container rollback sẵn sàng
+      community.docker.docker_container_info:
+        name: "{{ container_name_new }}"
+      register: container_info
+      until: container_info.container.State.Running == true
+      retries: 10
+      delay: 3
 
     - name: Đổi upstream sang container rollback
       ansible.builtin.replace:
-        path: "{{ nginx_config_local }}"
+        path: "{{ nginx_config_host }}"
         regexp: 'server \S+:{{ container_port }};'
         replace: 'server {{ container_name_new }}:{{ container_port }};'
 
-    - name: Copy nginx.conf đã sửa vào container
-      ansible.builtin.command: >
-        docker cp {{ nginx_config_local }} {{ nginx_container_name }}:{{ nginx_config_remote }}
-
-    - name: Reload Nginx trong container
+    - name: Reload Nginx
       ansible.builtin.command: >
         docker exec {{ nginx_container_name }} nginx -s reload
 
