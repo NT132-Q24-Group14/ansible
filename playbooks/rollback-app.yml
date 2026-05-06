@@ -46,31 +46,6 @@
       retries: 10
       delay: 3
 
-    - name: Create rollback nginx script
-      ansible.builtin.copy:
-        dest: "{{ rollback_script }}"
-        mode: "0755"
-        content: |
-          #!/bin/bash
-          set -e
-
-          echo "Updating nginx upstream..."
-          sed -i 's/pms:{{ container_port }}/{{ container_name_new }}:{{ container_port }}/g' {{ nginx_config_host }}
-
-          echo "Copying nginx config..."
-          docker cp {{ nginx_config_host }} {{ nginx_container_name }}:/etc/nginx/nginx.conf
-
-          echo "Reloading nginx..."
-          docker exec {{ nginx_container_name }} nginx -t
-          docker exec {{ nginx_container_name }} nginx -s reload
-
-          echo "Nginx switched to {{ container_name_new }}."
-
-    - name: Run rollback nginx script
-      ansible.builtin.command: "{{ rollback_script }}"
-
-
-
     - name: Stop container cũ
       community.docker.docker_container:
         name: "{{ container_name_old }}"
