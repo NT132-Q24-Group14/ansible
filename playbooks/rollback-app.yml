@@ -44,12 +44,15 @@
       until: container_info.container.State.Running == true
       retries: 10
       delay: 3
-
     - name: Đổi upstream sang container rollback
       ansible.builtin.replace:
         path: "{{ nginx_config_host }}"
-        regexp: 'server\s+[^;]+:{{ container_port }};'
-        replace: 'server {{ container_name_new }}:{{ container_port }};'
+        regexp: 'pms:{{ container_port }}'
+        replace: '{{ container_name_new }}:{{ container_port }}'
+
+    - name: Copy nginx.conf vào container proxy
+      ansible.builtin.command: >
+        docker cp {{ nginx_config_host }} {{ nginx_container_name }}:/etc/nginx/nginx.conf
 
     - name: Test Nginx config
       ansible.builtin.command: >
