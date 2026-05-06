@@ -1,0 +1,54 @@
+- name: Rollback Application
+  hosts: app
+  become: true
+
+  vars:
+    image_repo: mothmon14682/pms
+    container_name_old: pms
+    container_name_new: pms_rollback
+    host_port_new: 8081
+    container_port: 8080
+    nginx_config_path: /etc/nginx/nginx.conf
+
+  tasks:
+    - name: Validate image_tag is provided
+      ansible.builtin.fail:
+        msg: "Biến image_tag chưa được truyền vào."
+      when: image_tag is not defined or image_tag == ""
+
+    - name: Pull image version rollback
+      community.docker.docker_image:
+        name: "{{ image_repo }}:{{ image_tag }}"
+        source: pull
+        force_source: true
+
+    - name: Chạy container rollback trên port 8081
+      community.docker.docker_container:
+        name: "{{ container_name_new }}"
+        image: "{{ image_repo }}:{{ image_tag }}"
+        state: started
+        restart_policy: always
+        ports:
+          - "{{ host_port_new }}:{{ container_port }}"
+
+    - name: Chờ container rollback sẵn sàng
+      ansible.builtin.wait_for:
+        host: localhost
+        port: "{{ host_port_new }}"
+        timeout: 30
+
+    - name: Đổi Nginx trỏ sang port 8081
+      ansible.builtin.replace:
+        path: "{{ nginx_config_path }}"
+        regexp: 'server localhost:\d+;'
+        replace: 'server localhost:8081;'
+
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+
+    - name: Stop container cũ
+      community.docker.docker_container:
+        name: "{{ container_name_old }}"
+        state: stopped
