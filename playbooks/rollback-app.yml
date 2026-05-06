@@ -8,7 +8,7 @@
     container_name_new: pms_rollback
     container_port: 8080
     nginx_container_name: proxy
-    nginx_config_local: /tmp/nginx.conf
+    nginx_config_local: ~/nginx.conf
     nginx_config_remote: /etc/nginx/nginx.conf
 
   tasks:
