@@ -1,3 +1,4 @@
+# rollback-app.yml
 - name: Rollback Application
   hosts: app
   become: true
@@ -7,10 +8,7 @@
     container_name_old: pms
     container_name_new: pms_rollback
     container_port: 8080
-    nginx_container_name: proxy
-    nginx_config_host: /home/app-server/nginx.conf
-    nginx_config_remote: /etc/nginx/nginx.conf
-    rollback_script: /home/app-server/rollback-nginx.sh
+    nginx_config_path: /etc/nginx/sites-available/pms
 
   tasks:
     - name: Validate image_tag is provided
@@ -30,23 +28,32 @@
         image: "{{ image_repo }}:{{ image_tag }}"
         state: started
         restart_policy: always
-        networks:
-          - name: pms
+        ports:
+          - "8081:{{ container_port }}"
         env:
-          db_host: "{{ db_host }}"
-          db_name: "{{ db_name }}"
-          db_username: "{{ db_username }}"
-          db_password: "{{ db_password }}"
+          pms_db_host: "{{ db_host }}"
+          pms_db_name: "{{ db_name }}"
+          pms_db_username: "{{ db_username }}"
+          pms_db_password: "{{ db_password }}"
 
     - name: Chờ container rollback sẵn sàng
-      community.docker.docker_container_info:
-        name: "{{ container_name_new }}"
-      register: container_info
-      until: container_info.container.State.Running == true
-      retries: 10
-      delay: 3
+      ansible.builtin.wait_for:
+        host: localhost
+        port: 8081
+        timeout: 30
 
-    - name: Stop container cũ
+    - name: Đổi upstream Nginx sang container rollback
+      ansible.builtin.replace:
+        path: "{{ nginx_config_path }}"
+        regexp: 'server localhost:\d+;'
+        replace: 'server localhost:8081;'
+
+    - name: Reload Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+
+    - name: Xóa container cũ
       community.docker.docker_container:
         name: "{{ container_name_old }}"
-        state: stopped
+        state: absent

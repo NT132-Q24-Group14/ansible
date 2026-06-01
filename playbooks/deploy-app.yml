@@ -5,16 +5,14 @@
   vars:
     image_name: mothmon14682/pms:stable
     container_name: pms
+    host_port: 8080
+    container_port: 8080
 
   tasks:
     - name: Pull the latest image
       community.docker.docker_image:
         name: "{{ image_name }}"
         source: pull
-
-    - name: Create network
-      community.docker.docker_network:
-        name: pms
 
     - name: Run new container
       community.docker.docker_container:
@@ -24,8 +22,8 @@
         recreate: true
         pull: true
         restart_policy: always
-        networks:
-          - name: pms
+        ports:
+          - "{{ host_port }}:{{ container_port }}"
         env:
           pms_db_host: "{{ db_host }}"
           pms_db_name: "{{ db_name }}"
