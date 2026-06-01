@@ -12,16 +12,16 @@
   tasks:
     - name: Validate image_tag is provided
       ansible.builtin.fail:
-        msg: "Biến image_tag chưa được truyền vào."
+        msg: "The image_tag variable is required."
       when: image_tag is not defined or image_tag == ""
 
-    - name: Pull image version roll-forward
+    - name: Pull rollforward image
       community.docker.docker_image:
         name: "{{ image_repo }}:{{ image_tag }}"
         source: pull
         force_source: true
 
-    - name: Chạy container roll-forward
+    - name: Start rollforward container
       community.docker.docker_container:
         name: "{{ container_name_new }}"
         image: "{{ image_repo }}:{{ image_tag }}"
@@ -35,13 +35,13 @@
           pms_db_username: "{{ db_username }}"
           pms_db_password: "{{ db_password }}"
 
-    - name: Chờ container roll-forward sẵn sàng
+    - name: Wait for rollforward container
       ansible.builtin.wait_for:
         host: localhost
         port: 8080
         timeout: 30
 
-    - name: Đổi upstream Nginx sang container roll-forward
+    - name: Switch Nginx upstream to rollforward container
       ansible.builtin.replace:
         path: "{{ nginx_config_path }}"
         regexp: 'server localhost:\d+;'
@@ -52,7 +52,7 @@
         name: nginx
         state: reloaded
 
-    - name: Xóa container cũ
+    - name: Remove old container
       community.docker.docker_container:
         name: "{{ container_name_old }}"
         state: absent
