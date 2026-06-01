@@ -1,11 +1,11 @@
-- name: Rollback Application
+- name: Rollforward Application
   hosts: app
   become: true
 
   vars:
     image_repo: mothmon14682/pms
-    container_name_old: pms
-    container_name_new: pms_rollback
+    container_name_old: pms_rollback
+    container_name_new: pms
     container_port: 8080
     nginx_config_path: /etc/nginx/sites-available/pms
 
@@ -15,37 +15,37 @@
         msg: "Biến image_tag chưa được truyền vào."
       when: image_tag is not defined or image_tag == ""
 
-    - name: Pull image version rollback
+    - name: Pull image version roll-forward
       community.docker.docker_image:
         name: "{{ image_repo }}:{{ image_tag }}"
         source: pull
         force_source: true
 
-    - name: Chạy container rollback
+    - name: Chạy container roll-forward
       community.docker.docker_container:
         name: "{{ container_name_new }}"
         image: "{{ image_repo }}:{{ image_tag }}"
         state: started
         restart_policy: always
         ports:
-          - "8081:{{ container_port }}"
+          - "8080:{{ container_port }}"
         env:
           pms_db_host: "{{ db_host }}"
           pms_db_name: "{{ db_name }}"
           pms_db_username: "{{ db_username }}"
           pms_db_password: "{{ db_password }}"
 
-    - name: Chờ container rollback sẵn sàng
+    - name: Chờ container roll-forward sẵn sàng
       ansible.builtin.wait_for:
         host: localhost
-        port: 8081
+        port: 8080
         timeout: 30
 
-    - name: Đổi upstream Nginx sang container rollback
+    - name: Đổi upstream Nginx sang container roll-forward
       ansible.builtin.replace:
         path: "{{ nginx_config_path }}"
         regexp: 'server localhost:\d+;'
-        replace: 'server localhost:8081;'
+        replace: 'server localhost:8080;'
 
     - name: Reload Nginx
       ansible.builtin.service:
